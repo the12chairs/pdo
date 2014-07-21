@@ -2,12 +2,10 @@
 @include_once("interface.php");
 
 
-class DbConnect implements iDbConnectable{
+class DbConnect /* implements iDbConnectable*/ {
     
-    static private $tableLock;
-    private $attr;
-    private $dbh;
-    public $id,$login,$email,$password;
+    public $attr;
+    protected $table;
 
     public function __construct($attributes = array()){
         //Connection
@@ -18,25 +16,18 @@ class DbConnect implements iDbConnectable{
             die();
         }
 
-        //Make all
-        self::$tableLock = 'users'; // Bad style
         $this->attr = $attributes;
-        $this->login = $this->attr['login'];
-        $this->email = $this->attr['email'];
-        $this->password = $this->attr['password'];
+        $this->table ="Never exists";
 
     }
 
     public function findByPk($pk) {
-        $sql = "SELECT * FROM users WHERE id_user = $pk";
+        $id = array_keys($this->attr)[0];
+        $sql = "SELECT * FROM `$this->table` WHERE `$id` = ?";
         $q = $this->dbh->prepare($sql);
-        $q->execute();
+        $q->execute(array($pk));
         $res = $q->fetch();
-        $this->login = $res['login'];
-        $this->email = $res['email'];
-        $this->password = $res['password'];
-        $this->id = $res['id_user'];
-        return $this;
+        return new DbConnect($res);
     }
 
     public function save(){
@@ -53,7 +44,7 @@ class DbConnect implements iDbConnectable{
         return $this;
     }
 
-    public function where($attribute, $value){
+    public function where($attribute, $value, $with = false){
         $sql = "SELECT login, email, password FROM users WHERE `$attribute` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($value));
@@ -66,5 +57,36 @@ class DbConnect implements iDbConnectable{
         return $resArr;
     }
 }
+
+
+
+
+class Users extends DbConnect {
+
+    public function __construct($attributes = array()){
+        parent::__construct($attributes);
+        $this->table = "users";
+    }
+
+
+
+}
+
+class Photos extends DbConnect {
+    public function __construct($attributes = array()){
+        parent::__construct($attributes);
+        $this->table = "photos";
+    } 
+}
+
+$lol = new Users(["id_user" => "", "login" => "Gimli", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"]);
+
+$lol = $lol->findByPk(2);
+
+var_dump($lol);
+
+$photo = new Photos(["id_photo" => "", "picture" => "xxx.png", "id_user" => 1, "private" => true]);
+$photo = $photo->findByPk(1);
+var_dump($photo);
 
 ?>
