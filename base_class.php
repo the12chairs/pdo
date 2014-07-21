@@ -1,5 +1,4 @@
 <?php
-
 @include_once("interface.php");
 
 
@@ -68,14 +67,4 @@ class DbConnect implements iDbConnectable{
     }
 }
 
-$arr = array("login" => "testttttttt", "email" => "lol@lol.lol", 'password' => "qwerty");
-$test = new DbConnect($arr);
-$test->save();
-echo $test->login . "\n";
-echo $test->findByPk(1)->login . "\n";
-$test = $test->findByPk(1);
-$test->login = "change change";
-$test->save();
-var_dump($test->where("login", "lol"));
-var_dump($test);
 ?>
