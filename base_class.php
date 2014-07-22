@@ -7,7 +7,7 @@ class DbConnect /* implements iDbConnectable*/ {
     public $attr;
     protected $table;
 
-    public function __construct($attributes = array()){
+    public function __construct($attributes = array(), $tbl){
         //Connection
         try {
             $this->dbh = new PDO("mysql:host=localhost;dbname=instaclone", 'root', '123456');
@@ -17,40 +17,75 @@ class DbConnect /* implements iDbConnectable*/ {
         }
 
         $this->attr = $attributes;
-        $this->table ="Never exists";
+        $this->table = $tbl;
 
     }
+
+
+    // Work
 
     public function findByPk($pk) {
         $id = array_keys($this->attr)[0];
         $sql = "SELECT * FROM `$this->table` WHERE `$id` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($pk));
-        $res = $q->fetch();
-        return new DbConnect($res);
+        $res = $q->fetch(PDO::FETCH_ASSOC);
+        /*var_dump($res);*/
+        return new DbConnect($res, $this->table);
     }
 
+
+    // Work fine
     public function save(){
-        if($this->id != null){
-            $sql = "INSERT INTO users (login, email, password) VALUES (:login, :email, :password)";
+
+        //[bydlocode on]
+        $attribs = implode(", ", array_keys($this->attr));
+        $vals = ":";
+        foreach(explode(", ",$attribs) as $v){
+            $v .= ", :";
+            $vals .= $v;
+        }
+        $vals = substr_replace($vals, "", -3);
+        //[bydlocode off]
+
+
+        if($this->attr[array_keys($this->attr)[0]] == ""){ // attr[0] = id_elem!
+
+            $sql = "INSERT INTO $this->table ($attribs) VALUES ($vals)"; 
+
             $q = $this->dbh->prepare($sql);
+            /*var_dump($this->attr);*/
             $q->execute($this->attr);
         }
         else {
-            $sql = "UPDATE users SET (login, email, password) VALUES (:login, :email, :password)";
+            $id = array_keys($this->attr)[0];
+
+
+            $up = "";
+            foreach($this->attr as $key => $value){
+                $up .= $key . " = '" . $value. "', ";
+            }
+            $up = substr_replace($up, "", -2);
+            $ident =  $this->attr[array_keys($this->attr)[0]];
+            $sql = "UPDATE $this->table SET $up WHERE $id = $ident";
+
             $q = $this->dbh->prepare($sql);
             $q->execute($this->attr);
         }
+
         return $this;
     }
 
+
+    // Tested
     public function where($attribute, $value, $with = false){
-        $sql = "SELECT login, email, password FROM users WHERE `$attribute` = ?";
+        $sql = "SELECT * FROM $this->table WHERE `$attribute` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($value));
         $resArr = array();
-        foreach($q->fetchAll() as $res){
-            $tmp = new DbConnect(["login" => $res['login'], "email" => $res['email'], "password" => $res["password"]]);
+        foreach($q->fetchAll(PDO::FETCH_ASSOC) as $res){
+            /*var_dump($res);*/
+            $tmp = new DbConnect($res, $this->table);
 
             array_push($resArr, $tmp);
         }
@@ -64,8 +99,8 @@ class DbConnect /* implements iDbConnectable*/ {
 class Users extends DbConnect {
 
     public function __construct($attributes = array()){
-        parent::__construct($attributes);
-        $this->table = "users";
+        parent::__construct($attributes, "users");
+        /*$this->table = "users";*/
     }
 
 
@@ -74,19 +109,25 @@ class Users extends DbConnect {
 
 class Photos extends DbConnect {
     public function __construct($attributes = array()){
-        parent::__construct($attributes);
-        $this->table = "photos";
+        parent::__construct($attributes, "photos");
+        /*$this->table = "photos";*/
     } 
 }
 
-$lol = new Users(["id_user" => "", "login" => "Gimli", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"]);
+/*
+$lol = new Users(["id_user" => "", "login" => "Gimldfghdfhdfghi", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"], "users");
 
-$lol = $lol->findByPk(2);
+$lol = $lol->findByPk(8);
+$lol->attr['login'] = "Пробаsdrgsdghsdg";
 
-var_dump($lol);
+$lol->save();
+var_dump($lol->where("login", "lol"));
+*/
+/*var_dump($lol);*/
 
 $photo = new Photos(["id_photo" => "", "picture" => "xxx.png", "id_user" => 1, "private" => true]);
 $photo = $photo->findByPk(1);
-var_dump($photo);
+$photo->save();
+var_dump($photo->where("picture", "1.jpg"));
 
 ?>
