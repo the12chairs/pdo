@@ -78,7 +78,7 @@ class DbConnect /* implements iDbConnectable*/ {
 
 
     // Tested
-    public function where($attribute, $value, $with = false){
+    public function where_one($attribute, $value){
         $sql = "SELECT * FROM $this->table WHERE `$attribute` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($value));
@@ -91,6 +91,42 @@ class DbConnect /* implements iDbConnectable*/ {
         }
         return $resArr;
     }
+
+
+
+    public function where($attribute, $value, $with = false){
+        
+        $resArr = array();
+        
+        if(!$with){
+            $sql = "SELECT * FROM $this->table WHERE `$attribute` = ?";
+            $q = $this->dbh->prepare($sql);
+            $q->execute(array($value));
+
+            foreach($q->fetchAll(PDO::FETCH_ASSOC) as $res){
+                /*var_dump($res);*/
+                $tmp = new DbConnect($res, $this->table);
+
+                array_push($resArr, $tmp);
+            }
+        }
+        // inner join 
+        else {
+            // I've should done it like this?  
+            $sql = "SELECT * FROM $with INNER JOIN $this->table ON $with.`$attribute` = $this->table.`$attribute` WHERE $with.`$attribute` = ?";
+            $q = $this->dbh->prepare($sql);
+            $q->execute(array($value));
+            echo $sql. "\n";
+            foreach($q->fetchAll(PDO::FETCH_ASSOC) as $res){
+                $tmp = new DbConnect($res, $with);
+
+                array_push($resArr, $tmp);
+            }
+
+        }
+        return $resArr;
+    }
+
 }
 
 
@@ -114,20 +150,25 @@ class Photos extends DbConnect {
     } 
 }
 
-/*
+
 $lol = new Users(["id_user" => "", "login" => "Gimldfghdfhdfghi", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"], "users");
 
 $lol = $lol->findByPk(8);
 $lol->attr['login'] = "Пробаsdrgsdghsdg";
 
 $lol->save();
-var_dump($lol->where("login", "lol"));
-*/
+//var_dump($lol->where_one("login", "lol"));
+
+var_dump($lol->where("id_user", 1, "photos"));
+
 /*var_dump($lol);*/
+
 
 $photo = new Photos(["id_photo" => "", "picture" => "xxx.png", "id_user" => 1, "private" => true]);
 $photo = $photo->findByPk(1);
 $photo->save();
-var_dump($photo->where("picture", "1.jpg"));
+
+
+
 
 ?>
