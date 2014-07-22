@@ -1,11 +1,11 @@
 <?php
 @include_once("interface.php");
 
-
-class DbConnect /* implements iDbConnectable*/ {
+// Base class
+class DbConnect  {
     
-    public $attr;
-    protected $table;
+    public $attr; // Table row
+    protected $table;  // Table name
 
     public function __construct($attributes = array(), $tbl){
         //Connection
@@ -39,6 +39,7 @@ class DbConnect /* implements iDbConnectable*/ {
     public function save(){
 
         //[bydlocode on]
+        // Build sql query for template
         $attribs = implode(", ", array_keys($this->attr));
         $vals = ":";
         foreach(explode(", ",$attribs) as $v){
@@ -50,7 +51,7 @@ class DbConnect /* implements iDbConnectable*/ {
 
 
         if($this->attr[array_keys($this->attr)[0]] == ""){ // attr[0] = id_elem!
-
+            // inserting
             $sql = "INSERT INTO $this->table ($attribs) VALUES ($vals)"; 
 
             $q = $this->dbh->prepare($sql);
@@ -58,6 +59,8 @@ class DbConnect /* implements iDbConnectable*/ {
             $q->execute($this->attr);
         }
         else {
+
+            // Build sql query for updating 
             $id = array_keys($this->attr)[0];
 
 
@@ -66,6 +69,8 @@ class DbConnect /* implements iDbConnectable*/ {
                 $up .= $key . " = '" . $value. "', ";
             }
             $up = substr_replace($up, "", -2);
+
+            // Do work
             $ident =  $this->attr[array_keys($this->attr)[0]];
             $sql = "UPDATE $this->table SET $up WHERE $id = $ident";
 
@@ -79,6 +84,7 @@ class DbConnect /* implements iDbConnectable*/ {
 
     // Tested
     public function where_one($attribute, $value){
+        // Simple select
         $sql = "SELECT * FROM $this->table WHERE `$attribute` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($value));
@@ -94,11 +100,15 @@ class DbConnect /* implements iDbConnectable*/ {
 
 
 
+    // More complex select
     public function where($attribute, $value, $with = false){
         
-        $resArr = array();
+        $resArr = array(); // Result
         
+
+
         if(!$with){
+            // Like old version
             $sql = "SELECT * FROM $this->table WHERE `$attribute` = ?";
             $q = $this->dbh->prepare($sql);
             $q->execute(array($value));
@@ -115,7 +125,7 @@ class DbConnect /* implements iDbConnectable*/ {
             // I've should done it like this?  
             $sql = "SELECT * FROM $with INNER JOIN $this->table ON $with.`$attribute` = $this->table.`$attribute` WHERE $with.`$attribute` = ?";
             $q = $this->dbh->prepare($sql);
-            $q->execute(array($value));
+            $q->execute(array($value)); // M-M-MONSTER KILL
             echo $sql. "\n";
             foreach($q->fetchAll(PDO::FETCH_ASSOC) as $res){
                 $tmp = new DbConnect($res, $with);
@@ -131,6 +141,9 @@ class DbConnect /* implements iDbConnectable*/ {
 
 
 
+
+
+//Children, each have it's own constructor for columns and table name
 
 class Users extends DbConnect {
 
@@ -150,6 +163,9 @@ class Photos extends DbConnect {
     } 
 }
 
+
+
+// Testing
 
 $lol = new Users(["id_user" => "", "login" => "Gimldfghdfhdfghi", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"], "users");
 
