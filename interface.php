@@ -5,7 +5,7 @@ interface iDbConnectable {
      * @param Array $attributes
      * @return iDbConnectable
      */
-    public function __construct($attributes = array());
+  public function __construct($attributes = array(), $tbl);
 
     /**
      *
@@ -28,7 +28,9 @@ interface iDbConnectable {
      * @param string $value
      * @return iDbConnectable[] $objects - возвращает массив объектов текущего класса
      */
-    public function where($attribute, $value);
+    public function where_one($attribute, $value);
+    
 
+    public function where($attribute, $value, $with);
 }
 ?>

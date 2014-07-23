@@ -1,8 +1,11 @@
 <?php
-@include_once("interface.php");
+
+include_once("interface.php");
+
+
 
 // Base class
-class DbConnect  {
+class DbConnect implements iDbConnectable {
     
     public $attr; // Table row
     protected $table;  // Table name
@@ -10,7 +13,8 @@ class DbConnect  {
     public function __construct($attributes = array(), $tbl){
         //Connection
         try {
-            $this->dbh = new PDO("mysql:host=localhost;dbname=instaclone", 'root', '123456');
+
+            $this->dbh = new PDO("mysql:host=localhost;dbname=instaclone", 'root', '');
         } catch (PDOException $e) {
             print "Error!: " . $e->getMessage() . "<br/>";
             die();
@@ -21,11 +25,23 @@ class DbConnect  {
 
     }
 
+    // Dont repeat yourself
+    private function getPk(){
+        $sql = "SHOW KEYS FROM `$this->table` WHERE Key_name = 'PRIMARY'";
+        $q = $this->dbh->prepare($sql);
+        $q->execute();
+	$res = $q->fetch(PDO::FETCH_ASSOC);
+	return $res['Column_name'];
+	//var_dump($res);
+    }
 
     // Work
 
     public function findByPk($pk) {
-        $id = array_keys($this->attr)[0];
+        // Find pk
+
+        $id = $this->getPk();
+	// Use pk
         $sql = "SELECT * FROM `$this->table` WHERE `$id` = ?";
         $q = $this->dbh->prepare($sql);
         $q->execute(array($pk));
@@ -122,11 +138,13 @@ class DbConnect  {
         }
         // inner join 
         else {
+	    $id = $this->getPk();
             // I've should done it like this?  
-            $sql = "SELECT * FROM $with INNER JOIN $this->table ON $with.`$attribute` = $this->table.`$attribute` WHERE $with.`$attribute` = ?";
+	    // NOTE: Only for linked tables!
+            $sql = "SELECT * FROM $with INNER JOIN $this->table ON `$with`.`$id` = `$this->table`.`$id` WHERE `$with`.`$id` = ?";
             $q = $this->dbh->prepare($sql);
             $q->execute(array($value)); // M-M-MONSTER KILL
-            echo $sql. "\n";
+            //echo $sql. "\n";
             foreach($q->fetchAll(PDO::FETCH_ASSOC) as $res){
                 $tmp = new DbConnect($res, $with);
 
@@ -145,46 +163,10 @@ class DbConnect  {
 
 //Children, each have it's own constructor for columns and table name
 
-class Users extends DbConnect {
 
-    public function __construct($attributes = array()){
-        parent::__construct($attributes, "users");
-        /*$this->table = "users";*/
-    }
-
-
-
-}
-
-class Photos extends DbConnect {
-    public function __construct($attributes = array()){
-        parent::__construct($attributes, "photos");
-        /*$this->table = "photos";*/
-    } 
-}
-
-
-
-// Testing
-
-$lol = new Users(["id_user" => "", "login" => "Gimldfghdfhdfghi", "email" => "sometext@t.t", "password" => "q1w2e3r4t5y6"], "users");
-
-$lol = $lol->findByPk(8);
-$lol->attr['login'] = "Пробаsdrgsdghsdg";
-
-$lol->save();
-//var_dump($lol->where_one("login", "lol"));
-
-var_dump($lol->where("id_user", 1, "photos"));
-
-/*var_dump($lol);*/
-
-
-$photo = new Photos(["id_photo" => "", "picture" => "xxx.png", "id_user" => 1, "private" => true]);
-$photo = $photo->findByPk(1);
-$photo->save();
-
-
+// Look
+// users.php
+// photos.php
 
 
 ?>
